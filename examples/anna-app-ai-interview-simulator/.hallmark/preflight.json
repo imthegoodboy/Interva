@@ -1,0 +1,20 @@
+{
+  "date": "2026-06-21",
+  "framework": "vanilla-static-spa",
+  "surface": "Anna schema 2 UI bundle",
+  "font_stack": "Inter/system UI through CSS tokens",
+  "palette": "OKLCH custom properties in bundle/tokens.css",
+  "motion": "CSS-only transform and opacity transitions",
+  "spacing": "4px token scale",
+  "preserve": [
+    "Anna host APIs",
+    "static bundle architecture",
+    "role setup -> interview -> report -> progress workflow"
+  ],
+  "introduce": [
+    "Hallmark token sheet",
+    "focus-visible discipline",
+    "subtle non-layout motion",
+    "less box-like open workspace surfaces"
+  ]
+}

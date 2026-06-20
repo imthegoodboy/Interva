@@ -1,6 +1,29 @@
 # Anna Interview Simulator
 
-Anna Interview Simulator is a schema 2 Anna App that runs a multi-agent mock interview panel in a native app window. The HR Manager, Senior Engineer, and Tech Lead panel asks adaptive questions, evaluates answers, scores communication and technical depth, identifies weak areas, saves progress, and creates a personalized study plan.
+Anna Interview Simulator is a production-ready schema 2 Anna App for realistic mock interviews. It opens as a native Anna app window, runs a three-person interview panel, evaluates each answer, tracks progress across sessions, and turns weak areas into the next practice plan.
+
+The product is built for job seekers, students, and engineers who need more than a static question bank. The app adapts to the target role, level, difficulty, focus areas, and role context, then uses Anna agent sessions for AI-generated panel questions and feedback. If Anna's agent session is unavailable, the app clearly reports the fallback state and keeps the interview moving with deterministic local scoring.
+
+Current release target: `0.1.7`.
+
+## Judge Quick Path
+
+```powershell
+cd examples\anna-app-ai-interview-simulator
+npm install
+npm run preflight
+npm run preflight:real
+```
+
+`preflight` validates the deterministic app path. `preflight:real` runs Playwright against the Anna-backed local harness with real Anna agent-session access and APS storage.
+
+The core flow to review:
+
+1. Pick a role preset or enter a custom target role.
+2. Start a mock interview.
+3. Answer at least one panel question.
+4. Confirm the answer coach, scoring, follow-up, report, study plan, and progress history work.
+5. Use “Next mock” to turn weak areas into the next interview setup.
 
 ## What Is Inside
 
@@ -10,18 +33,35 @@ anna-app-ai-interview-simulator/
 ├── manifest.json
 ├── bundle/
 │   ├── index.html
+│   ├── tokens.css
 │   ├── style.css
 │   ├── app.js
 │   ├── interview-engine.js
+│   ├── workspace-storage.js
 │   └── icon.svg
 ├── fixtures/
 │   └── happy-path.jsonl
 ├── tests/
 │   ├── e2e-smoke.js
 │   ├── interview-engine.spec.js
-│   └── manifest.spec.js
+│   ├── manifest.spec.js
+│   └── workspace-storage.spec.js
 └── DEPLOY.md
 ```
+
+## Product Features
+
+- Role-specific mock interviews for frontend, backend, full-stack, data, and manager tracks.
+- Custom target role, level, difficulty, question count, focus areas, and role context.
+- Three-panel loop: HR Manager, Senior Engineer, and Tech Lead.
+- Anna agent-powered adaptive questions and evaluations when running inside Anna.
+- Deterministic fallback scoring that is clearly labeled when the agent is unavailable.
+- Live answer coach for STAR structure, specifics, tradeoffs, metrics, and depth.
+- Report generation with readiness scores, strengths, weak areas, question feedback, and study-plan tasks.
+- Progress view with saved interview history, average scores, and recurring weak-area trends.
+- Cloud persistence through Anna storage with compacted history to stay below app-storage limits.
+- Chat artifact export for completed reports when Anna returns a valid artifact id.
+- Tokenized, responsive UI with reduced-motion support and no external scripts or analytics.
 
 ## Anna Integration
 
@@ -35,6 +75,8 @@ anna-app-ai-interview-simulator/
 When the Anna agent session is unavailable or times out, the app shows a fallback status and uses deterministic local scoring so the mock can continue without pretending the fallback was AI-generated.
 
 Saved report history is compacted before writing to Anna storage. This keeps the workspace under Anna's app-storage budget while preserving setup, scores, weak areas, study-plan tasks, and concise question feedback after reload.
+
+The UI bundle is self-contained. It loads `tokens.css`, `style.css`, and local JavaScript modules only; the manifest does not allow external origins.
 
 ## Executa Distribution
 
@@ -73,6 +115,12 @@ npm run preflight:real
 
 `preflight` runs the deterministic offline harness. `preflight:real` also starts the Anna-backed harness on port `5191` with APS storage and longer Playwright timeouts.
 
+Playwright screenshots are written to:
+
+```text
+test-results/e2e-smoke/
+```
+
 ## Product Flow
 
 1. Configure role, level, difficulty, question count, focus areas, and role context.
@@ -88,3 +136,22 @@ npm run preflight:real
 ## Privacy
 
 Interview setup, scores, compact report history, and study-plan task state are stored through Anna app storage for the current app/user context. Long free-form answers are compacted in saved history to stay within Anna storage limits. The app does not embed third-party analytics, external scripts, or provider credentials.
+
+## Release Notes
+
+### 0.1.7
+
+- Final Hallmark-guided UI polish with shared design tokens, clearer focus states, reduced-motion handling, and subtle non-layout motion.
+- Added `tokens.css` to keep the visual system portable and explicit.
+- Added Hallmark preflight/log records and explicit accent-ink token handling.
+- Updated judge-facing documentation and release checklist.
+
+### 0.1.6
+
+- Published the first Hallmark-tokenized bundle candidate and updated the installed app path.
+
+### 0.1.5
+
+- Added compact Anna workspace storage and visible agent fallback states.
+- Added real Anna/APS Playwright smoke coverage.
+- Published as the stable baseline before the final UI polish pass.

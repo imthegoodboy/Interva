@@ -2,7 +2,7 @@
   "name": "anna-app-ai-interview-simulator",
   "private": true,
   "type": "module",
-  "version": "0.1.5",
+  "version": "0.1.7",
   "description": "AI Interview Simulator Anna App with panel interviews, progress tracking, and study plans.",
   "scripts": {
     "dev": "anna-app dev --port 5190 --no-llm",

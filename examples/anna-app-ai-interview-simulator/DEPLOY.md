@@ -51,7 +51,7 @@ npm run e2e:real
 
 ```powershell
 anna-app apps push --account $ANNA_HOST --json
-anna-app apps cut 0.1.5 --account $ANNA_HOST --json
+anna-app apps cut 0.1.7 --account $ANNA_HOST --json
 anna-app apps submit-review ai-interview-simulator --account $ANNA_HOST --json
 anna-app apps status ai-interview-simulator --account $ANNA_HOST --json
 ```
@@ -59,8 +59,17 @@ anna-app apps status ai-interview-simulator --account $ANNA_HOST --json
 After approval:
 
 ```powershell
-anna-app apps release 0.1.5 --account $ANNA_HOST --json
+anna-app apps release 0.1.7 --account $ANNA_HOST --json
 ```
+
+If the local CLI prints a contradictory release guard such as `app status is published; release not permitted`, confirm the version exists with:
+
+```powershell
+anna-app apps status ai-interview-simulator --account $ANNA_HOST --json
+anna-app apps versions ai-interview-simulator --account $ANNA_HOST --json
+```
+
+Then use the Anna Developer Console version table to publish the cut version. The release must show as `is_latest: true` before final installed-app QA.
 
 ## Review Checklist
 

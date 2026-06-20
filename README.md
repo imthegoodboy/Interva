@@ -2,6 +2,34 @@
 
 # Anna Executa Plugin Examples
 
+## Featured Anna App: Anna Interview Simulator
+
+This repository now includes a production-ready Anna App for judges:
+
+[`examples/anna-app-ai-interview-simulator`](examples/anna-app-ai-interview-simulator)
+
+Anna Interview Simulator is a schema 2 Anna App that runs a realistic mock interview panel inside Anna. Users choose a target role, level, difficulty, focus areas, and context; the app then runs an adaptive HR Manager, Senior Engineer, and Tech Lead panel, scores each answer, identifies weak areas, saves progress with Anna storage, and generates a personalized study plan.
+
+What makes it judge-ready:
+
+- Uses `anna.agent.session` for adaptive AI questions and evaluations.
+- Uses Anna app storage for setup, active interview state, compact report history, and study-plan task state.
+- Uses `anna.chat.append_artifact` to save completed reports back to the current Anna conversation.
+- Ships as a static SPA bundle with no external scripts, no analytics, and no provider API keys.
+- Does not require a custom Executa binary for the current release; the app relies on Anna host APIs and deterministic fallback scoring.
+- Includes offline and real-Anna Playwright smoke tests.
+
+Quick verification:
+
+```powershell
+cd examples\anna-app-ai-interview-simulator
+npm install
+npm run preflight
+npm run preflight:real
+```
+
+Current release target: `0.1.7`.
+
 This repository provides **complete examples and development documentation** for Anna Executa plugins, covering Python, Node.js, and Go, with both Local and Binary distribution methods.
 
 ## What is Executa?
@@ -35,6 +63,7 @@ anna-executa-examples/
 │   │   └── Makefile
 │   ├── multifile-binary/                # Multi-file Binary distribution examples
 │   │   └── python-pyinstaller-onedir/   # PyInstaller --onedir + manifest.json
+│   ├── anna-app-ai-interview-simulator/ # ⭐ Production-ready Anna App — AI mock interview panel
 │   └── anna-app-focus-flow/             # ⭐ Complete Anna App — UI bundle + skill + tool plugin
 │                                        #     The tool plugin ships in three flavours:
 │                                        #     focus-session-{python,node,go}; pick one via
