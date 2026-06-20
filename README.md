@@ -8,7 +8,9 @@ This repository now includes a production-ready Anna App for judges:
 
 [`examples/anna-app-ai-interview-simulator`](examples/anna-app-ai-interview-simulator)
 
-Anna Interview Simulator is a schema 2 Anna App that runs a realistic mock interview panel inside Anna. Users choose a target role, level, difficulty, focus areas, and context; the app then runs an adaptive HR Manager, Senior Engineer, and Tech Lead panel, scores each answer, identifies weak areas, saves progress with Anna storage, and generates a personalized study plan.
+Anna Interview Simulator is a schema 2 Anna App that runs a realistic mock interview panel inside Anna. Users choose a target role, level, difficulty, focus areas, and context; the app then runs an adaptive HR Manager, Senior Engineer, and Tech Lead interview loop, scores each answer, identifies weak areas, saves progress with Anna storage, and generates a personalized study plan.
+
+It is built as a self-contained static SPA bundle with no custom Executa in the current release. AI behavior comes from `anna.agent.session` when the app is running inside Anna. If agent access is unavailable, the app clearly switches to deterministic fallback mode so the interview, report, and study-plan flow still works during local testing.
 
 What makes it judge-ready:
 
@@ -18,6 +20,46 @@ What makes it judge-ready:
 - Ships as a static SPA bundle with no external scripts, no analytics, and no provider API keys.
 - Does not require a custom Executa binary for the current release; the app relies on Anna host APIs and deterministic fallback scoring.
 - Includes offline and real-Anna Playwright smoke tests.
+- Includes unit tests for manifest permissions, interview engine behavior, and storage compaction.
+- Keeps report history under Anna storage limits by compacting old answers and gradually reducing retained history when needed.
+- Documents the full release path in [`DEPLOY.md`](examples/anna-app-ai-interview-simulator/DEPLOY.md).
+
+How the app is built:
+
+- `app.json` contains Anna listing metadata: name, slug, category, release version, description, and public app URLs.
+- `manifest.json` declares the schema 2 static SPA bundle, Anna permissions, host APIs, CSP, and app window sizing.
+- `bundle/index.html` is the app shell.
+- `bundle/tokens.css` and `bundle/style.css` define the final tokenized UI system.
+- `bundle/app.js` controls views, form state, Anna bridge calls, storage, report actions, and UI rendering.
+- `bundle/interview-engine.js` contains role presets, scoring, fallback questions, AI prompt builders, report generation, and study-plan generation.
+- `bundle/workspace-storage.js` compacts saved state before writing to Anna storage.
+- `tests/` covers the manifest contract, interview logic, storage budget behavior, and end-to-end browser flow.
+
+What is AI-generated:
+
+- In Anna-backed mode, questions and answer evaluations can be generated through `anna.agent.session`.
+- The app normalizes AI output before using it, so malformed or partial model responses do not break the interview.
+- If Anna agent access is unavailable, the app switches to deterministic fallback questions and scoring and labels that state clearly.
+
+What is persisted:
+
+- current setup
+- active interview state
+- compact report history
+- selected report id
+- weak areas
+- study-plan task state
+
+The app does not store provider API keys, load analytics scripts, or call external origins from the bundle.
+
+Core app flow:
+
+1. Configure a role preset or custom interview target.
+2. Start a panel mock interview.
+3. Answer questions while the live answer coach checks STAR, specifics, tradeoffs, metrics, and depth.
+4. Submit answers for Anna-backed or fallback scoring.
+5. Finish the interview and review readiness, strengths, weak areas, and per-question feedback.
+6. Use the personalized study plan and "Next mock" action to continue practicing from weak areas.
 
 Quick verification:
 
@@ -29,6 +71,16 @@ npm run preflight:real
 ```
 
 Current release target: `0.1.7`.
+
+Full project documentation is in [`examples/anna-app-ai-interview-simulator/README.md`](examples/anna-app-ai-interview-simulator/README.md).
+
+Release and test status:
+
+- Production version: `0.1.7`
+- Full local gate: `npm run preflight`
+- Full Anna-backed gate: `npm run preflight:real`
+- Deployment guide: [`examples/anna-app-ai-interview-simulator/DEPLOY.md`](examples/anna-app-ai-interview-simulator/DEPLOY.md)
+- App README: [`examples/anna-app-ai-interview-simulator/README.md`](examples/anna-app-ai-interview-simulator/README.md)
 
 This repository provides **complete examples and development documentation** for Anna Executa plugins, covering Python, Node.js, and Go, with both Local and Binary distribution methods.
 
