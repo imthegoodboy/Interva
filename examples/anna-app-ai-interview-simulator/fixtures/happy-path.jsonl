@@ -1,0 +1,11 @@
+{"t":0,"kind":"meta","harness_version":"0.1","session_id":"interview-dev-session","window_uuid":"interview-dev-wid"}
+{"t":1,"kind":"req","id":1,"ns":"window","method":"hello","args":{}}
+{"t":2,"kind":"res","id":1,"ok":true,"result":{"wid":"interview-dev-wid","user_id":1}}
+{"t":8,"kind":"req","id":2,"ns":"storage","method":"get","args":{"key":"ai-interview-simulator:workspace:v1"}}
+{"t":9,"kind":"res","id":2,"ok":true,"result":{"exists":false,"value":null}}
+{"t":20,"kind":"req","id":3,"ns":"agent","method":"session.create","args":{"submode":"auto"}}
+{"t":21,"kind":"res","id":3,"ok":true,"result":{"app_session_uuid":"interview_mock_0001","expires_in":600,"submode":"auto","granted_tools":[],"inherit_host_tools":false}}
+{"t":44,"kind":"req","id":4,"ns":"storage","method":"set","args":{"key":"ai-interview-simulator:workspace:v1"}}
+{"t":45,"kind":"res","id":4,"ok":true,"result":{"ok":true}}
+{"t":80,"kind":"req","id":5,"ns":"chat","method":"append_artifact","args":{"kind":"app_event","summary":"AI Interview Simulator report for Senior Frontend Engineer: 73/100 readiness."}}
+{"t":81,"kind":"res","id":5,"ok":true,"result":{"artifact_id":"artifact_interview_report_mock"}}

@@ -1,0 +1,15 @@
+{
+  "slug": "ai-interview-simulator",
+  "name": "AI Interview Simulator",
+  "version": "0.1.0",
+  "tagline": "A multi-agent mock interview panel that adapts to every answer.",
+  "description": "AI Interview Simulator gives students, job seekers, and software engineers a realistic panel interview inside Anna. HR, Senior Engineer, and Tech Lead interviewers ask role-specific questions, evaluate answers, score communication and technical depth, identify weak areas, and generate a personalized study plan. Progress and past interviews persist through Anna storage so every session builds on the last one.",
+  "category": "education",
+  "logo_url": "https://anna.partners/apps/ai-interview-simulator/logo.png",
+  "cover_url": "https://anna.partners/apps/ai-interview-simulator/cover.png",
+  "screenshots": [],
+  "homepage_url": "https://anna.partners/apps/ai-interview-simulator",
+  "support_url": "https://anna.partners/apps/ai-interview-simulator/support",
+  "privacy_url": "https://anna.partners/apps/ai-interview-simulator/privacy",
+  "pricing_model": "free"
+}

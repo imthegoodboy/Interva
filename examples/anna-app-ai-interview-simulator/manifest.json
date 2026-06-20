@@ -1,0 +1,62 @@
+{
+  "schema": 2,
+  "permissions": [
+    "storage.read",
+    "storage.write",
+    "chat.append_artifact"
+  ],
+  "required_executas": [],
+  "optional_executas": [],
+  "system_prompt_addendum": "The user has the AI Interview Simulator app open. The app conducts role-specific mock interviews with an HR Manager, Senior Engineer, and Tech Lead panel. When asked about interview progress, use the app's saved interview state and artifacts as the source of truth. Do not invent scores, saved interviews, or study-plan items that were not produced by the app.",
+  "user_message_prefix_template": "[AI Interview Simulator] {user_message}",
+  "tags": [
+    "interview",
+    "education",
+    "career",
+    "agent",
+    "assessment"
+  ],
+  "ui": {
+    "bundle": {
+      "format": "static-spa",
+      "entry": "index.html",
+      "external_origins": []
+    },
+    "views": [
+      {
+        "name": "main",
+        "title": "AI Interview Simulator",
+        "default": true,
+        "entry": "index.html",
+        "min_size": { "w": 360, "h": 560 },
+        "default_size": { "w": 1180, "h": 760 },
+        "max_size": { "w": 1600, "h": 1100 },
+        "resizable": true,
+        "movable": true,
+        "single_instance": true,
+        "icon": "icon.svg"
+      }
+    ],
+    "host_api": {
+      "chat": ["append_artifact"],
+      "storage": ["get", "set", "list", "delete"],
+      "window": ["set_title"],
+      "agent": {
+        "session": { "auto": true },
+        "tools": []
+      }
+    },
+    "csp_overrides": {
+      "img-src": ["'self'", "data:", "blob:"],
+      "font-src": ["'self'", "data:"],
+      "style-src": ["'self'"],
+      "script-src": ["'self'"]
+    },
+    "state_merge": "last_writer_wins"
+  },
+  "dev": {
+    "fixtures": ["fixtures/*.jsonl"],
+    "seed_storage": {},
+    "user_id": 1
+  }
+}

@@ -1,0 +1,178 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <title>Anna Interview Simulator</title>
+    <link rel="icon" type="image/svg+xml" href="icon.svg" />
+    <link rel="stylesheet" href="style.css" />
+  </head>
+  <body>
+    <main class="app-shell" aria-live="polite">
+      <aside class="nav-rail" aria-label="App navigation">
+        <div class="brand" aria-label="Anna Interview Simulator">
+          <span class="brand-mark" aria-hidden="true"></span>
+          <span class="brand-name">Anna Interview Simulator</span>
+        </div>
+
+        <nav class="nav-list">
+          <button class="nav-item is-active" type="button" data-view="setup">
+            <span class="nav-icon" aria-hidden="true">01</span>
+            <span>Setup</span>
+          </button>
+          <button class="nav-item" type="button" data-view="interview">
+            <span class="nav-icon" aria-hidden="true">02</span>
+            <span>Interview</span>
+          </button>
+          <button class="nav-item" type="button" data-view="report">
+            <span class="nav-icon" aria-hidden="true">03</span>
+            <span>Report</span>
+          </button>
+          <button class="nav-item" type="button" data-view="progress">
+            <span class="nav-icon" aria-hidden="true">04</span>
+            <span>Progress</span>
+          </button>
+        </nav>
+
+        <div class="connection-line">
+          <span id="connection-dot" class="status-dot status-dot--offline" aria-hidden="true"></span>
+          <span id="connection-label">Standalone preview</span>
+        </div>
+      </aside>
+
+      <section class="workspace">
+        <header class="topbar">
+          <div>
+            <h1 id="page-title">Setup</h1>
+            <p id="page-subtitle">Choose the target role and interview shape.</p>
+          </div>
+          <div class="topbar-actions">
+            <button class="ghost-button" id="reset-demo-btn" type="button">Reset</button>
+            <button class="primary-button" id="quick-start-btn" type="button">Start mock</button>
+          </div>
+        </header>
+
+        <section class="view is-active" id="view-setup" aria-labelledby="page-title">
+          <div class="setup-layout">
+            <div class="setup-main">
+              <section class="setup-blueprint" aria-label="Interview blueprint">
+                <div>
+                  <div class="section-label">Interview blueprint</div>
+                  <h2>Practice against a real panel loop.</h2>
+                  <p id="setup-summary"></p>
+                </div>
+                <div class="setup-stats" id="setup-stats"></div>
+              </section>
+
+              <section class="preset-band" aria-label="Role presets">
+                <div class="section-label">Role presets</div>
+                <div class="preset-row" id="role-preset-list"></div>
+              </section>
+
+              <form class="setup-form" id="setup-form">
+                <div class="field-row">
+                  <label for="role-input">Target role</label>
+                  <input id="role-input" name="role" type="text" maxlength="80" autocomplete="off" />
+                </div>
+                <div class="field-grid">
+                  <label>
+                    Level
+                    <select id="level-select" name="level">
+                      <option>Student</option>
+                      <option>Junior</option>
+                      <option selected>Mid-level</option>
+                      <option>Senior</option>
+                      <option>Staff</option>
+                    </select>
+                  </label>
+                  <label>
+                    Difficulty
+                    <select id="difficulty-select" name="difficulty">
+                      <option>Warm-up</option>
+                      <option selected>Realistic</option>
+                      <option>High pressure</option>
+                    </select>
+                  </label>
+                  <label>
+                    Questions
+                    <select id="question-count-select" name="questionCount">
+                      <option value="4">4 questions</option>
+                      <option value="6" selected>6 questions</option>
+                      <option value="8">8 questions</option>
+                    </select>
+                  </label>
+                </div>
+
+                <fieldset class="focus-fieldset">
+                  <legend>Focus areas</legend>
+                  <div id="focus-area-list" class="segmented-wrap"></div>
+                </fieldset>
+
+                <label class="context-field">
+                  Role context
+                  <textarea
+                    id="context-input"
+                    name="context"
+                    rows="5"
+                    maxlength="800"
+                    placeholder="Paste job description highlights, target company notes, or skills you want the panel to emphasize."
+                  ></textarea>
+                </label>
+
+                <div class="form-actions">
+                  <button class="primary-button" type="submit">Start mock</button>
+                  <button class="ghost-button" id="load-last-btn" type="button">Open last report</button>
+                </div>
+              </form>
+            </div>
+
+            <div class="panel-preview" aria-label="Interview panel">
+              <div class="section-label">Panel</div>
+              <div id="interviewer-preview"></div>
+            </div>
+          </div>
+        </section>
+
+        <section class="view" id="view-interview" aria-labelledby="page-title">
+          <div class="interview-layout">
+            <div class="interview-main">
+              <div class="interview-status-band" id="interview-status-band"></div>
+              <div class="question-timeline" id="question-timeline"></div>
+              <div class="panel-strip" id="panel-strip"></div>
+              <div class="question-band" id="question-band"></div>
+              <div class="transcript" id="transcript"></div>
+              <form class="answer-composer" id="answer-form">
+                <label for="answer-input">Answer</label>
+                <textarea id="answer-input" rows="7" maxlength="5000" placeholder="Answer as you would in a real interview. Include decisions, tradeoffs, examples, and what you would do next."></textarea>
+                <div class="composer-actions">
+                  <span id="answer-hint">0 words</span>
+                  <button class="ghost-button" id="finish-interview-btn" type="button">Finish</button>
+                  <button class="primary-button" id="submit-answer-btn" type="submit">Submit Answer</button>
+                </div>
+              </form>
+            </div>
+            <aside class="evaluation-rail" aria-label="Live evaluation">
+              <div class="section-label">Answer coach</div>
+              <div class="answer-coach" id="answer-coach"></div>
+              <div class="section-label rail-label">Live evaluation</div>
+              <div id="score-stack"></div>
+              <div class="followup-list" id="followup-list"></div>
+              <div class="weak-area-list" id="live-weak-area-list"></div>
+            </aside>
+          </div>
+        </section>
+
+        <section class="view" id="view-report" aria-labelledby="page-title">
+          <div class="report-layout" id="report-layout"></div>
+        </section>
+
+        <section class="view" id="view-progress" aria-labelledby="page-title">
+          <div class="progress-layout" id="progress-layout"></div>
+        </section>
+      </section>
+    </main>
+
+    <div class="toast" id="toast" role="status" aria-live="polite" hidden></div>
+    <script src="app.js" type="module"></script>
+  </body>
+</html>
