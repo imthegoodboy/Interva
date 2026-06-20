@@ -7,8 +7,8 @@
   ],
   "required_executas": [],
   "optional_executas": [],
-  "system_prompt_addendum": "The user has the AI Interview Simulator app open. The app conducts role-specific mock interviews with an HR Manager, Senior Engineer, and Tech Lead panel. When asked about interview progress, use the app's saved interview state and artifacts as the source of truth. Do not invent scores, saved interviews, or study-plan items that were not produced by the app.",
-  "user_message_prefix_template": "[AI Interview Simulator] {user_message}",
+  "system_prompt_addendum": "The user has the Anna Interview Simulator app open. The app conducts role-specific mock interviews with an HR Manager, Senior Engineer, and Tech Lead panel. When asked about interview progress, use the app's saved interview state and artifacts as the source of truth. Do not invent scores, saved interviews, or study-plan items that were not produced by the app.",
+  "user_message_prefix_template": "[Anna Interview Simulator] {user_message}",
   "tags": [
     "interview",
     "education",
@@ -25,7 +25,7 @@
     "views": [
       {
         "name": "main",
-        "title": "AI Interview Simulator",
+        "title": "Anna Interview Simulator",
         "default": true,
         "entry": "index.html",
         "min_size": { "w": 360, "h": 560 },

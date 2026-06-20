@@ -159,6 +159,7 @@ input:disabled {
   margin-top: auto;
   color: var(--muted);
   font-size: 12px;
+  line-height: 1.35;
 }
 
 .status-dot {
@@ -253,7 +254,7 @@ input:disabled {
 
 .setup-layout {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) 334px;
+  grid-template-columns: minmax(0, 1fr);
   gap: 0;
   min-height: 100%;
 }
@@ -359,12 +360,6 @@ input:disabled {
   padding: 24px 32px 34px 24px;
 }
 
-.panel-preview {
-  border-left: 1px solid var(--line);
-  padding: 28px 24px;
-  background: #fbfdfc;
-}
-
 .section-label {
   color: var(--accent-strong);
   font-size: 11px;
@@ -467,21 +462,11 @@ input:disabled {
   color: var(--accent-strong);
 }
 
-.interviewer-line {
-  display: grid;
-  grid-template-columns: 42px minmax(0, 1fr);
-  gap: 12px;
-  padding: 18px 0;
-  border-bottom: 1px solid var(--line);
-}
-
-.interviewer-line strong,
 .panel-person strong {
   display: block;
   font-size: 14px;
 }
 
-.interviewer-line span,
 .panel-person span {
   display: block;
   color: var(--muted);
@@ -545,9 +530,22 @@ input:disabled {
 }
 
 .agent-mode {
+  display: grid;
+  justify-items: end;
+  gap: 2px;
   color: var(--muted);
   font-size: 12px;
   font-weight: 750;
+  text-align: right;
+}
+
+.agent-mode strong {
+  color: var(--text);
+  font-size: 12px;
+}
+
+.agent-mode span {
+  max-width: 260px;
 }
 
 .question-timeline {
@@ -1066,6 +1064,22 @@ input:disabled {
   color: var(--muted);
 }
 
+.progress-metric {
+  display: grid;
+  align-content: start;
+  gap: 6px;
+}
+
+.progress-metric strong {
+  font-size: 34px;
+  line-height: 1;
+}
+
+.progress-metric .thin-progress {
+  width: min(180px, 100%);
+  margin-top: 5px;
+}
+
 .history-timeline {
   padding: 24px;
 }
@@ -1245,7 +1259,6 @@ input:disabled {
     padding: 20px 16px;
   }
 
-  .panel-preview,
   .evaluation-rail,
   .study-plan,
   .progress-weakness {

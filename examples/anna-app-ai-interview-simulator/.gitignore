@@ -2,3 +2,8 @@ node_modules/
 test-results/
 .anna/
 dist-anna/
+dist/
+build/
+.venv/
+__pycache__/
+*.pyc

@@ -20,9 +20,15 @@ import {
   scoreLabel,
   wordCount,
 } from "./interview-engine.js";
+import {
+  buildWorkspaceSnapshot,
+  STORAGE_HARD_BYTES,
+} from "./workspace-storage.js";
 
 const STORAGE_KEY = "ai-interview-simulator:workspace:v1";
 const MAX_HISTORY = 24;
+const PERSIST_DEBOUNCE_MS = 450;
+const AGENT_RUN_TIMEOUT_MS = 120_000;
 
 const PAGE_META = {
   setup: {
@@ -56,6 +62,9 @@ let anna = null;
 let agentHandle = null;
 let runtimeMode = "standalone";
 let busyLabel = "";
+let connectionBaseLabel = "Standalone preview";
+let storageStatusLabel = "Local save";
+let persistTimer = null;
 
 const els = {};
 
@@ -90,7 +99,6 @@ function cacheElements() {
     questionCountSelect: document.querySelector("#question-count-select"),
     contextInput: document.querySelector("#context-input"),
     focusAreaList: document.querySelector("#focus-area-list"),
-    interviewerPreview: document.querySelector("#interviewer-preview"),
     quickStartBtn: document.querySelector("#quick-start-btn"),
     resetBtn: document.querySelector("#reset-demo-btn"),
     loadLastBtn: document.querySelector("#load-last-btn"),
@@ -175,6 +183,7 @@ async function connectAnna() {
     anna = await mod.AnnaAppRuntime.connect();
     window.anna = anna;
     runtimeMode = "anna";
+    registerAnnaEvents();
     updateConnection("Connected to Anna", true);
     await anna.window?.set_title?.({ title: "Anna Interview Simulator" });
   } catch (error) {
@@ -182,6 +191,32 @@ async function connectAnna() {
     runtimeMode = "standalone";
     updateConnection("Standalone preview", false);
   }
+}
+
+function registerAnnaEvents() {
+  anna?.on?.("runtime_state_synced", (payload) => {
+    const workspace = extractSyncedWorkspace(payload);
+    if (!workspace) return;
+    state = hydrateState(workspace);
+    syncSetupForm();
+    render();
+    setStorageStatus("Cloud synced");
+  });
+
+  anna?.on?.("entry_payload", (payload) => {
+    const requestedView = payload?.view;
+    if (requestedView && PAGE_META[requestedView]) setView(requestedView);
+  });
+}
+
+function extractSyncedWorkspace(payload) {
+  if (!payload || typeof payload !== "object") return null;
+  if (payload.key === STORAGE_KEY && payload.value) return payload.value;
+  if (payload[STORAGE_KEY]?.value) return payload[STORAGE_KEY].value;
+  if (payload[STORAGE_KEY]) return payload[STORAGE_KEY];
+  if (payload.value?.schemaVersion || payload.value?.history || payload.value?.currentInterview) return payload.value;
+  if (payload.schemaVersion || payload.history || payload.currentInterview) return payload;
+  return null;
 }
 
 function renderStaticSetup() {
@@ -196,16 +231,6 @@ function renderStaticSetup() {
     <button class="preset-button" type="button" data-preset-id="${escapeHtml(preset.id)}">
       ${escapeHtml(preset.label)}
     </button>
-  `).join("");
-
-  els.interviewerPreview.innerHTML = INTERVIEWERS.map((person) => `
-    <div class="interviewer-line">
-      <div class="avatar">${escapeHtml(person.shortTitle)}</div>
-      <div>
-        <strong>${escapeHtml(person.title)}</strong>
-        <span>${escapeHtml(person.intent)}</span>
-      </div>
-    </div>
   `).join("");
 }
 
@@ -242,7 +267,7 @@ function syncSetupForm(writeValues = true) {
 function syncSetupDraft() {
   state.setup = readSetupForm();
   renderSetupBlueprint();
-  persistWorkspace();
+  schedulePersistWorkspace();
 }
 
 function renderSetupBlueprint() {
@@ -294,7 +319,10 @@ function renderInterview() {
     <div class="thin-progress" aria-label="Interview progress">
       <span style="width:${progress}%"></span>
     </div>
-    <div class="agent-mode">${escapeHtml(agentModeLabel(interview))}</div>
+    <div class="agent-mode">
+      <strong>${escapeHtml(agentModeLabel(interview))}</strong>
+      ${interview.agentIssue?.message ? `<span>${escapeHtml(interview.agentIssue.message)}</span>` : ""}
+    </div>
   `;
   els.questionTimeline.innerHTML = renderQuestionTimeline(interview);
   els.panelStrip.innerHTML = renderPanelStrip(interview.currentQuestion?.interviewer);
@@ -521,9 +549,9 @@ function renderProgress() {
         <strong>${progress.completedCount}</strong>
         <span>Total completed</span>
       </div>
-      <div>${scoreRow("Avg Communication", progress.averages.communication)}</div>
-      <div>${scoreRow("Avg Technical", progress.averages.technical)}</div>
-      <div>${scoreRow("Avg Readiness", progress.averages.readiness)}</div>
+      ${progressMetric("Avg Communication", progress.averages.communication)}
+      ${progressMetric("Avg Technical", progress.averages.technical)}
+      ${progressMetric("Avg Readiness", progress.averages.readiness)}
     </section>
     <section class="history-timeline">
       <div class="section-label">Interview History</div>
@@ -557,17 +585,22 @@ async function beginInterview() {
   setBusy("Preparing panel...");
   try {
     let result = null;
+    let agentError = null;
     try {
       result = await runPanelAgent(interview, buildOpeningPrompt(interview));
-    } catch {
+    } catch (error) {
+      agentError = error;
       result = null;
     }
     const question = result?.next_question ? normalizeAgentQuestion(result.next_question) : null;
     if (question && state.currentInterview?.id === interview.id) {
       state.currentInterview.currentQuestion = question;
       state.currentInterview.agentMode = "anna-agent";
+      state.currentInterview.agentIssue = null;
     } else if (state.currentInterview?.id === interview.id) {
       state.currentInterview.agentMode = anna ? "local-fallback" : "standalone";
+      state.currentInterview.agentIssue = agentIssue("Opening question", agentError);
+      if (anna) showToast("Anna agent was unavailable, so local fallback generated the opening question.", 3600);
     }
     await persistWorkspace();
   } finally {
@@ -592,16 +625,22 @@ async function submitAnswer() {
   render();
   try {
     let aiResult = null;
+    let agentError = null;
     try {
       aiResult = await runPanelAgent(interview, buildEvaluationPrompt(interview, answer));
-    } catch {
+    } catch (error) {
+      agentError = error;
       aiResult = null;
     }
     const next = applyTurn(interview, answer, aiResult);
     next.agentMode = aiResult ? "anna-agent" : (anna ? "local-fallback" : "standalone");
+    next.agentIssue = aiResult ? null : agentIssue("Answer evaluation", agentError);
     state.currentInterview = next;
     els.answerInput.value = "";
     els.answerHint.textContent = "0 words";
+    if (!aiResult && anna) {
+      showToast("Anna agent evaluation failed; local scoring kept the mock moving.", 3600);
+    }
     if (next.turns.length >= next.setup.questionCount) {
       await finishInterview(true, next);
       return;
@@ -624,6 +663,7 @@ async function finishInterview(autoComplete = false, sourceInterview = null) {
     return;
   }
   const completed = completeInterview(interview);
+  await cleanupAgentSession(interview.agentSessionUuid);
   state.history = [completed, ...state.history.filter((item) => item.id !== completed.id)].slice(0, MAX_HISTORY);
   state.selectedReportId = completed.id;
   state.currentInterview = null;
@@ -639,22 +679,29 @@ async function runPanelAgent(interview, prompt) {
   if (!anna?.agent?.session) return null;
   const handle = await ensureAgentSession(interview);
   if (!handle?.run) return null;
-  let text = "";
-  const stream = handle.run({ content: prompt });
-  for await (const frame of stream) {
-    text += extractStreamText(frame);
-  }
-  return parsePanelJson(text);
+  const content = `${buildAgentSystemPrompt(interview.setup)}\n\n${prompt}`;
+  const stream = handle.run({ content });
+  const text = await collectAgentText(stream, handle, AGENT_RUN_TIMEOUT_MS);
+  const parsed = parsePanelJson(text);
+  if (!parsed) throw new Error("Anna agent returned a response the app could not parse.");
+  return parsed;
 }
 
 function extractStreamText(frame) {
   if (!frame) return "";
   if (typeof frame === "string") return frame;
+  if (frame.event === "error") {
+    throw new Error(frame.message || frame.code || "Anna agent run failed.");
+  }
   if (frame.event === "token" && frame.text) return frame.text;
+  if (frame.event === "model_token" && frame.text) return frame.text;
   if (frame.event === "message" && frame.content) return frame.content;
   if (frame.text && frame.event !== "raw") return frame.text;
 
   const payload = frame.payload || frame;
+  if (payload.event === "error") {
+    throw new Error(payload.message || payload.code || "Anna agent run failed.");
+  }
   if (payload.event === "raw" || payload.event === "end") return "";
   if (typeof payload.text === "string" && payload.event !== "raw") return payload.text;
   if (typeof payload.delta?.content === "string") return payload.delta.content;
@@ -673,21 +720,101 @@ function extractStreamText(frame) {
 }
 
 async function ensureAgentSession(interview) {
-  if (agentHandle) return agentHandle;
-  if (interview.agentSessionUuid && anna.agent.session.attach) {
-    agentHandle = anna.agent.session.attach(interview.agentSessionUuid);
+  if (agentHandle) {
+    await refreshAgentSession(agentHandle);
     return agentHandle;
   }
-  agentHandle = await anna.agent.session({
-    submode: "auto",
-    system_prompt: buildAgentSystemPrompt(interview.setup),
-  });
-  if (agentHandle?.app_session_uuid) {
-    interview.agentSessionUuid = agentHandle.app_session_uuid;
+  if (interview.agentSessionUuid && anna.agent.session.attach) {
+    try {
+      agentHandle = anna.agent.session.attach(interview.agentSessionUuid);
+      await refreshAgentSession(agentHandle);
+      return agentHandle;
+    } catch {
+      agentHandle = null;
+      interview.agentSessionUuid = null;
+    }
+  }
+  agentHandle = await anna.agent.session({ submode: "auto" });
+  const sessionUuid = agentHandle?.app_session_uuid || agentHandle?.appSessionUuid;
+  if (sessionUuid) {
+    interview.agentSessionUuid = sessionUuid;
     state.currentInterview = interview;
     await persistWorkspace();
   }
   return agentHandle;
+}
+
+async function collectAgentText(stream, handle, timeoutMs) {
+  const iterator = stream?.[Symbol.asyncIterator]?.();
+  if (!iterator) throw new Error("Anna agent did not return a stream.");
+  let text = "";
+  let timedOut = false;
+  let timeoutId = null;
+  const timeout = new Promise((_, reject) => {
+    timeoutId = window.setTimeout(() => {
+      timedOut = true;
+      reject(new Error(`Anna agent timed out after ${Math.round(timeoutMs / 1000)} seconds.`));
+    }, timeoutMs);
+  });
+
+  try {
+    while (true) {
+      const next = await Promise.race([iterator.next(), timeout]);
+      if (next.done) break;
+      text += extractStreamText(next.value);
+    }
+    return text;
+  } catch (error) {
+    if (timedOut) {
+      await cancelAgentRun(handle, stream.runId);
+      await iterator.return?.();
+    }
+    throw error;
+  } finally {
+    window.clearTimeout(timeoutId);
+  }
+}
+
+async function refreshAgentSession(handle) {
+  if (!handle?.refresh) return;
+  try {
+    await handle.refresh();
+  } catch (error) {
+    const code = error?.code || error?.name;
+    if (["APP_SESSION_EXPIRED", "APP_SESSION_REVOKED", "-32017", "-32011"].includes(String(code))) {
+      throw error;
+    }
+  }
+}
+
+async function cleanupAgentSession(sessionUuid) {
+  const handle = agentHandle || (sessionUuid && anna?.agent?.session?.attach
+    ? anna.agent.session.attach(sessionUuid)
+    : null);
+  agentHandle = null;
+  try {
+    await handle?.delete?.();
+  } catch {
+    // Expired sessions are reaped by Anna; cleanup is best effort.
+  }
+}
+
+async function cancelAgentRun(handle, runId) {
+  if (!handle?.cancel || !runId) return;
+  try {
+    await handle.cancel(runId);
+  } catch {
+    // Timeout recovery should never block local fallback.
+  }
+}
+
+function agentIssue(stage, error) {
+  if (!error) return null;
+  return {
+    stage,
+    message: error?.message || error?.code || "Anna agent was unavailable.",
+    at: new Date().toISOString(),
+  };
 }
 
 function readSetupForm() {
@@ -807,7 +934,7 @@ async function appendReportArtifact(report, explicit = false) {
     return;
   }
   try {
-    await anna.chat.append_artifact({
+    const result = await anna.chat.append_artifact({
       kind: "app_event",
       summary: `AI Interview Simulator report for ${report.setup.role}: ${report.liveScores.readiness}/100 readiness.`,
       payload: {
@@ -819,6 +946,7 @@ async function appendReportArtifact(report, explicit = false) {
         study_plan: report.studyPlan,
       },
     });
+    if (!result?.artifact_id) throw new Error("Anna did not return an artifact id.");
     if (explicit) showToast("Report saved to chat.");
   } catch (error) {
     if (explicit) showToast(`Could not save artifact: ${error?.message || error}`);
@@ -842,25 +970,29 @@ async function readWorkspace() {
   }
 }
 
+function schedulePersistWorkspace(delay = PERSIST_DEBOUNCE_MS) {
+  window.clearTimeout(persistTimer);
+  persistTimer = window.setTimeout(() => {
+    persistWorkspace();
+  }, delay);
+}
+
 async function persistWorkspace() {
-  const snapshot = {
-    setup: normalizeSetup(state.setup),
-    view: state.view,
-    currentInterview: state.currentInterview,
-    history: state.history.slice(0, MAX_HISTORY),
-    selectedReportId: state.selectedReportId,
-  };
+  const { snapshot, bytes, historyLimit } = buildWorkspaceSnapshot(state);
   if (anna?.storage?.set) {
     try {
       await anna.storage.set({ key: STORAGE_KEY, value: snapshot });
+      const suffix = historyLimit < Math.min(state.history.length, MAX_HISTORY) ? ` · ${historyLimit} reports kept` : "";
+      setStorageStatus(bytes > STORAGE_HARD_BYTES ? "Cloud saved, compacted" : `Cloud saved${suffix}`);
     } catch {
-      // Browser storage keeps standalone preview usable.
+      setStorageStatus("Local backup active");
     }
   }
   try {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(snapshot));
+    if (!anna?.storage?.set) setStorageStatus("Local save");
   } catch {
-    // Ignore quota/private-mode failures.
+    setStorageStatus("Storage unavailable");
   }
 }
 
@@ -880,9 +1012,20 @@ function selectedReport() {
 }
 
 function updateConnection(label, connected) {
-  els.connectionLabel.textContent = label;
+  connectionBaseLabel = label;
   els.connectionDot.classList.toggle("status-dot--online", connected);
   els.connectionDot.classList.toggle("status-dot--offline", !connected);
+  renderConnectionLabel();
+}
+
+function setStorageStatus(label) {
+  storageStatusLabel = label;
+  renderConnectionLabel();
+}
+
+function renderConnectionLabel() {
+  if (!els.connectionLabel) return;
+  els.connectionLabel.textContent = `${connectionBaseLabel} · ${storageStatusLabel}`;
 }
 
 function setBusy(label) {
@@ -956,6 +1099,20 @@ function statLine(label, value) {
     <div>
       <span>${escapeHtml(label)}</span>
       <strong>${escapeHtml(value)}</strong>
+    </div>
+  `;
+}
+
+function progressMetric(label, value = 0) {
+  const safeValue = Math.max(0, Math.min(100, Math.round(value || 0)));
+  return `
+    <div class="progress-metric">
+      <div class="section-label">${escapeHtml(label)}</div>
+      <strong>${safeValue}</strong>
+      <span>${escapeHtml(scoreLabel(safeValue))}</span>
+      <div class="thin-progress" aria-label="${escapeHtml(label)} ${safeValue} out of 100">
+        <span style="width:${safeValue}%"></span>
+      </div>
     </div>
   `;
 }

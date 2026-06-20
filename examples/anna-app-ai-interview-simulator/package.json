@@ -2,11 +2,16 @@
   "name": "anna-app-ai-interview-simulator",
   "private": true,
   "type": "module",
-  "version": "0.1.0",
+  "version": "0.1.5",
   "description": "AI Interview Simulator Anna App with panel interviews, progress tracking, and study plans.",
   "scripts": {
     "dev": "anna-app dev --port 5190 --no-llm",
     "dev:real": "anna-app dev --port 5191 --llm-account https://anna.partners --storage aps",
+    "e2e": "node tests/e2e-smoke.js",
+    "e2e:real": "set ANNA_APP_REAL=1&& set ANNA_APP_PORT=5191&& set E2E_ACTION_TIMEOUT_MS=120000&& node tests/e2e-smoke.js",
+    "fixture:verify": "anna-app fixture verify fixtures\\happy-path.jsonl",
+    "preflight": "npm test && npm run fixture:verify && npm run validate && npm run e2e",
+    "preflight:real": "npm run preflight && npm run e2e:real",
     "validate": "anna-app validate --strict",
     "test": "vitest run"
   },
